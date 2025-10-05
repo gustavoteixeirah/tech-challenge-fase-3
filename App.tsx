@@ -8,6 +8,7 @@ import SignInScreen from "./screens/SignInScreen";
 import SignUpScreen from "./screens/SignUpScreen";
 import HomeScreen from "./screens/HomeScreen";
 import AppTabs from "./Navigation";
+import Toast from "react-native-toast-message";
 
 const Stack = createNativeStackNavigator();
 
@@ -23,10 +24,10 @@ function Router() {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: true }}>
       {user ? (
         // fluxo autenticado → Tabs
-        <Stack.Screen name="AppTabs" component={AppTabs} />
+        <Stack.Screen name="Bytebank" component={AppTabs} />
       ) : (
         // fluxo público
         <>
@@ -51,6 +52,7 @@ export default function App() {
     <AuthProvider>
       <NavigationContainer>
         <Router />
+        <Toast />
       </NavigationContainer>
     </AuthProvider>
   );

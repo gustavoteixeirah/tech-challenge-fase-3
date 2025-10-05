@@ -7,6 +7,7 @@ import {
   query,
   deleteDoc,
   setDoc,
+  getDoc,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { Transaction } from "../types/transactions";
@@ -14,22 +15,19 @@ import { Transaction } from "../types/transactions";
 export async function addTransaction(
   uid: string,
   transaction: Transaction,
-  receiptFile?: { uri: string; fileName?: string }
+  receiptFile?: { base64: string }
 ): Promise<Transaction & { id: string }> {
-  let receiptUrl: string | undefined;
+  let receiptBase64: string | undefined;
 
-  if (receiptFile?.uri) {
-    const fileName = receiptFile.fileName ?? `${Date.now()}.jpg`;
-    const storageRef = ref(storage, `receipts/${uid}/${fileName}`);
-    const response = await fetch(receiptFile.uri);
-    const blob = await response.blob();
-    await uploadBytes(storageRef, blob);
-    receiptUrl = await getDownloadURL(storageRef);
+  if (receiptFile?.base64) {
+    receiptBase64 = receiptFile.base64;
   }
 
   // Só inclui valores definidos
-  const transactionData: Partial<Transaction> = { ...transaction };
-  if (receiptUrl) transactionData.receiptUrl = receiptUrl;
+  const transactionData: Partial<Transaction> = {
+    ...transaction,
+    receiptBase64,
+  };
 
   // Remove valores undefined
   Object.keys(transactionData).forEach(
@@ -41,7 +39,10 @@ export async function addTransaction(
   const txRef = collection(db, "users", uid, "transactions"); //Caminho para a collection de transações
   const docRef = await setDoc(doc(txRef, transaction.id), transactionData);
 
-  return transactionData;
+  return {
+  ...transactionData,
+  id: transaction.id,
+} as Transaction & { id: string };;
 }
 
 export async function getTransactions(uid: string): Promise<(Transaction & { id: string })[]> {
@@ -55,11 +56,11 @@ export async function getTransactions(uid: string): Promise<(Transaction & { id:
 }
 
 export async function deleteTransaction(uid: string, transactionId: string) {
-    try {
-        const txDoc = doc(db, `users/${uid}/transactions`, transactionId);
-        await deleteDoc(txDoc);
-        console.log("Documento deletado");
-    } catch (error){
-        throw new Error(error);
-    }
+  try {
+    const txDoc = doc(db, `users/${uid}/transactions`, transactionId);
+    await deleteDoc(txDoc);
+    console.log("Transaction deleted");
+  } catch (error: any) {
+    throw new Error(error.message);
+  }
 }

@@ -13,6 +13,7 @@ export interface Transaction {
   category?: string;
   description?: string;
   updatedAt?: string;
+  receiptBase64?:string;
 }
 
 export enum TransactionCategoryEnum {

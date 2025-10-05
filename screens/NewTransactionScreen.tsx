@@ -26,6 +26,17 @@ import {
   categoryKeywords,
   Transaction,
 } from "../types/transactions";
+import Toast from "react-native-toast-message";
+
+function showToast(message: string, type: "success" | "error" = "error") {
+  Toast.show({
+    type,
+    text1: message,
+    position: "top",
+    visibilityTime: 3000,
+    autoHide: true,
+  });
+}
 
 export default function NewTransactionScreen() {
   const { user } = useAuth();
@@ -57,71 +68,78 @@ export default function NewTransactionScreen() {
 
   const normalizeAmount = (value: string) => value.replace(",", ".");
 
-  // Teste de upload
-  //   async function pickReceipt() {
-  //     const result = await ImagePicker.launchImageLibraryAsync({
-  //       mediaTypes: ImagePicker.MediaTypeOptions.Images, // ou use mediaTypes: ImagePicker.MediaType.Images se sua versão suportar
-  //       quality: 0.7,
-  //     });
-  //     if (!result.canceled) {
-  //       setReceipt(result.assets[0]);
-  //     }
-  //   }
+  async function pickReceipt() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+      base64: true,
+    });
 
-  //  <Button title="Selecionar Comprovante" onPress={pickReceipt} />
-  //   {receipt && (
-  //     <View
-  //       style={{ flexDirection: "row", alignItems: "center", marginTop: 10 }}
-  //     >
-  //       <Image source={{ uri: receipt.uri }} style={styles.imagePicker} />
-  //       <TouchableOpacity
-  //         onPress={() => setReceipt(null)}
-  //         style={{ marginLeft: 10 }}
-  //       >
-  //         <Ionicons name="trash" size={28} color="red" />
-  //       </TouchableOpacity>
-  //     </View>
-  //   )} */
-  //     <FlatList
-  //     data={transactions}
-  //     keyExtractor={(item) => item.id!}
-  //     renderItem={({ item }) => (
-  //       <View style={styles.transaction}>
-  //         <Text style={styles.txTitle}>{item.description || item.type}</Text>
-  //         <Text style={styles.txAmount}>${item.amount}</Text>
-  //         <TouchableOpacity
-  //           onPress={() => handleDelete(item.id)}
-  //           style={{ marginLeft: 10 }}
-  //         >
-  //           <Ionicons name="trash" size={28} color="red" />
-  //         </TouchableOpacity>
-  //       </View>
-  //     )}
-  //   />
+    if (!result.canceled && result.assets[0].base64) {
+      setReceipt({
+        ...result.assets[0],
+        base64: result.assets[0].base64,
+      });
+    }
+  }
 
   async function handleSave() {
+    // Itens obrigatórios
     if (!uid) {
-      Alert.alert("Erro", "Usuário não autenticado");
+      showToast("Usuário não autenticado.");
       return;
     }
     if (!amount) {
-      Alert.alert("Erro", "Preencha o valor da transação");
+      showToast("Preencha o valor da transação.");
+      return;
+    }
+
+    const normalizedAmount = Number(normalizeAmount(amount));
+
+    // Valida valor
+    if (isNaN(normalizedAmount) || normalizedAmount <= 0) {
+      showToast("Valor da transação inválido.");
+      return;
+    }
+
+    // Checa valor máximo (R$1,000,000)
+    if (normalizedAmount > 1000000) {
+      showToast("Valor da transação muito alto.");
+      return;
+    }
+
+    // Checa formato do recibo
+    if (receipt && !["image/jpeg", "image/png"].includes(receipt.type || "")) {
+      showToast("Formato de comprovante inválido.");
+      return;
+    }
+
+    // Checa tamanho do recibo (5MB)
+    if (
+      receipt &&
+      receipt.base64 &&
+      receipt.base64.length * (3 / 4) > 5 * 1024 * 1024
+    ) {
+      showToast("Comprovante muito grande (máx 5MB).");
       return;
     }
 
     try {
       const newTx: Transaction = {
         type: transactionType,
-        amount: Number(normalizeAmount(amount)),
+        amount: normalizedAmount,
         createdAt: new Date().toISOString(),
         id: uuid.v4() as string,
         userId: uid,
-        fileUrl: receipt?.uri,
         category: category || undefined,
         description: description || undefined,
       };
 
-      const saved = await addTransaction(uid, newTx, receipt);
+      const saved = await addTransaction(
+        uid,
+        newTx,
+        receipt ? { base64: receipt.base64! } : undefined
+      );
 
       setTransactions([saved, ...transactions]);
       setAmount("");
@@ -129,7 +147,7 @@ export default function NewTransactionScreen() {
       setCategory("");
       setTransactionType(TransactionTypeEnum.TRANSFER);
       setReceipt(null);
-      Alert.alert("Sucesso", "Transação adicionada!");
+      showToast("Transação adicionada!", "success");
     } catch (error: any) {
       Alert.alert("Erro", error.message);
     }
@@ -163,6 +181,7 @@ export default function NewTransactionScreen() {
 
   return (
     <View style={styles.container}>
+      <Text style={{ color: "#8d8d8dff" }}>*Itens Obrigatórios</Text>
       <Text style={styles.label}>Tipo de Transação*</Text>
       <DropDownPicker
         open={open}
@@ -174,7 +193,6 @@ export default function NewTransactionScreen() {
         style={styles.dropdown}
         dropDownContainerStyle={{ borderColor: "#ccc" }}
       />
-
       <Text style={styles.label}>Valor*</Text>
       <TextInput
         style={styles.input}
@@ -184,7 +202,6 @@ export default function NewTransactionScreen() {
         value={amount}
         onChangeText={setAmount}
       />
-
       <Text style={styles.label}>Descrição</Text>
       <TextInput
         style={styles.input}
@@ -193,7 +210,6 @@ export default function NewTransactionScreen() {
         value={description}
         onChangeText={handleDescriptionChange}
       />
-
       <Text style={styles.label}>Categoria</Text>
       <TextInput
         style={styles.input}
@@ -204,13 +220,25 @@ export default function NewTransactionScreen() {
           setCategory(text as TransactionCategoryEnum);
         }}
       />
-
+      <Button title="Selecionar Comprovante" onPress={pickReceipt} />
+      {receipt && (
+        <View
+          style={{ flexDirection: "row", alignItems: "center", marginTop: 10 }}
+        >
+          <Image source={{ uri: receipt.uri }} style={styles.imagePicker} />
+          <TouchableOpacity
+            onPress={() => setReceipt(null)}
+            style={{ marginLeft: 10 }}
+          >
+            <Ionicons name="trash" size={28} color="red" />
+          </TouchableOpacity>
+        </View>
+      )}
       <TouchableOpacity onPress={handleSave}>
         <View style={styles.button}>
           <Text style={{ color: "white" }}>Concluir Transação</Text>
         </View>
       </TouchableOpacity>
-
       <View style={{ height: 10 }} />
     </View>
   );
