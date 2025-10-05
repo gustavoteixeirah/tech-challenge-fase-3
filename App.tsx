@@ -7,8 +7,11 @@ import { View, ActivityIndicator } from "react-native";
 import SignInScreen from "./screens/SignInScreen";
 import SignUpScreen from "./screens/SignUpScreen";
 import HomeScreen from "./screens/HomeScreen";
+import { createDrawerNavigator } from '@react-navigation/drawer';
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Transactions from "./screens/TransactionScreen";
 
-const Stack = createNativeStackNavigator();
+const Drawer = createDrawerNavigator();
 
 function Router() {
   const { user, loading } = useAuth();
@@ -20,18 +23,23 @@ function Router() {
     );
   }
   return (
-    <Stack.Navigator>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+    <Drawer.Navigator screenOptions={{ headerShown: true }}>
       {user ? (
         // App protegido
-        <Stack.Screen name="Home" component={HomeScreen} options={{ title: "Dashboard" }} />
+         <>
+        <Drawer.Screen name="Home" component={HomeScreen} options={{ title: "Dashboard", drawerLabel: "Dashboard" }} />
+        <Drawer.Screen name="Transactions" component={Transactions} options={{ title: "Extrato", drawerLabel: "Extrato" }} />
+        </>
       ) : (
         // Fluxo público (login/cadastro)
         <>
-          <Stack.Screen name="SignIn" component={SignInScreen} options={{ title: "Entrar" }} />
-          <Stack.Screen name="SignUp" component={SignUpScreen} options={{ title: "Criar conta" }} />
+          <Drawer.Screen name="SignIn" component={SignInScreen} options={{ title: "Entrar", drawerLabel: "Entrar" , headerShown: false }} />
+          <Drawer.Screen name="SignUp" component={SignUpScreen} options={{ title: "Criar conta", drawerLabel: "Criar conta" , headerShown: false }} />
         </>
       )}
-    </Stack.Navigator>
+    </Drawer.Navigator>
+    </GestureHandlerRootView>
   );
 }
 
