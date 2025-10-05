@@ -3,6 +3,7 @@ import { Transaction, TransactionTypeEnum } from "../types/transactions";
 import { ActivityIndicator, FlatList } from "react-native";
 import TransactionItem from "./TransactionItem";
 import { getTransactions } from "../services/transactions";
+import { useAuth } from "../auth/AuthContext";
 const PAGE_SIZE = 5;
 
 const mockData: Transaction[] = [
@@ -114,17 +115,21 @@ const mockData: Transaction[] = [
 ];
 
 export const TransactionList = () => {
+
+  const { user } = useAuth();
+  const uid = user?.uid;
+
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
-
   const loadTransactions = async (nextPage = 0) => {
     if (loading || !hasMore) return;
     setLoading(true);
 
-    getTransactions
+    getTransactions;
     const result = await fetchTransactions(nextPage);
     setTransactions((prev) =>
       nextPage === 0 ? result.data : [...prev, ...result.data]
@@ -140,24 +145,24 @@ export const TransactionList = () => {
   const deleteTransaction = async (id: string): Promise<boolean> => {
     return true;
   };
-    const handleEdit = (id: string) => {
-      console.log("Editar", `Editar transação ${id}`);
-    };
-  
-    const handleDelete = async (id: string) => {
-      const success = await deleteTransaction(id);
-      if (success) {
-        setTransactions((prev) => prev.filter((t) => t.id !== id));
-      }
-    };
-  
-    const handleLoadMore = () => {
-      if (hasMore && !loading) {
-        const nextPage = page + 1;
-        setPage(nextPage);
-        loadTransactions(nextPage);
-      }
-    };
+  const handleEdit = (id: string) => {
+    console.log("Editar", `Editar transação ${id}`);
+  };
+
+  const handleDelete = async (id: string) => {
+    const success = await deleteTransaction(id);
+    if (success) {
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (hasMore && !loading) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      loadTransactions(nextPage);
+    }
+  };
 
   const fetchTransactions = async (
     page: number,
