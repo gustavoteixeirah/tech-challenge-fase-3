@@ -6,9 +6,7 @@ import RNDateTimePicker, {
   DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { Pressable } from "react-native";
-import { red } from "react-native-reanimated/lib/typescript/Colors";
 import { SafeAreaView } from "react-native";
-import { useLocale } from "@react-navigation/native";
 
 const BORDER_COLOR = "#ccc";
 
