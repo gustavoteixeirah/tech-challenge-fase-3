@@ -22,6 +22,14 @@ export const TransactionItem = ({ transaction, onEdit, onDelete }: { transaction
     ? `${formatted}`
     : `- ${formatted} `;
 }
+function formatDate(dateString: string): string {
+  const options: Intl.DateTimeFormatOptions = {
+    month: "2-digit",
+    day: "2-digit",
+  };
+  const date = new Date(dateString);
+  return date.toLocaleDateString("pt-BR", options);
+}
 
   return (
     <React.Fragment>
@@ -31,6 +39,9 @@ export const TransactionItem = ({ transaction, onEdit, onDelete }: { transaction
           <Text style={styles.title}>{transaction.description}</Text>
           <Text style={styles.amount}>{formatAmount(transaction.amount)}</Text>
         </View>
+        <View style={styles.rightContainer}>
+        <Text style={styles.date}>{formatDate(transaction.createdAt)}</Text>
+        <View style={styles.buttonContainer}>
         <Pressable
           style={styles.button}
           onPress={() => handleEdit(transaction.id)}
@@ -44,6 +55,8 @@ export const TransactionItem = ({ transaction, onEdit, onDelete }: { transaction
           <IconTrash />
       
         </Pressable>
+        </View>
+      </View>
       </View>
     </React.Fragment>
   );
@@ -60,6 +73,7 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 16 },
   subtitle: { fontSize: 12, color: "#666" },
+  date: { fontSize: 12, color: "#666" },
   amount: { fontSize: 16, fontWeight: "bold" },
   button: {
     backgroundColor: "#000",
@@ -72,6 +86,8 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 14,
   },
+  rightContainer: { alignItems: "flex-end" },
+  buttonContainer: { flexDirection: "row", marginTop: 8 },
 });
 
 export default TransactionItem;
