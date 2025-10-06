@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Transaction, TransactionTypeEnum } from "../types/transactions";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -9,15 +10,21 @@ import {
   TextInput,
 } from "react-native";
 import TransactionItem from "./TransactionItem";
-import { getTransactions } from "../services/transactions";
+import { deleteTransaction, getTransactions } from "../services/transactions";
 import { useAuth } from "../auth/AuthContext";
 import Filter from "./Filter";
+import { useNavigation } from "@react-navigation/native";
+
 const PAGE_SIZE = 10;
 
-export const TransactionList = () => {
+export const TransactionList = ({ route }) => {
+  useEffect(() => {
+    loadTransactions(0);
+  }, []);
+
   const { user } = useAuth();
   const uid = user?.uid;
-
+  const navigation = useNavigation();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
 
   const [page, setPage] = useState(0);
@@ -45,15 +52,23 @@ export const TransactionList = () => {
     setLoading(false);
   };
 
-  useEffect(() => {
-    loadTransactions(0);
-  }, []);
+  const handleDeleteTransaction = async (id: string): Promise<boolean> => {
+    if (!uid) return;
 
-  const deleteTransaction = async (id: string): Promise<boolean> => {
-    return true;
+    try {
+      await deleteTransaction(uid, id);
+      Alert.alert("Success", "Transação deletada!");
+      loadTransactions(0);
+    } catch (error: any) {
+      Alert.alert("Error", error.message);
+    }
   };
   const handleEdit = (id: string) => {
     console.log("Editar", `Editar transação ${id}`);
+  };
+
+  const handleAdd = () => {
+    navigation.navigate("New" as never);
   };
 
   const handleSearch = (text: string) => {
@@ -69,7 +84,7 @@ export const TransactionList = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const success = await deleteTransaction(id);
+    const success = await handleDeleteTransaction(id);
     if (success) {
       setTransactions((prev) => prev.filter((t) => t.id !== id));
     }
@@ -137,17 +152,15 @@ export const TransactionList = () => {
       />
       <Pressable
         onPress={() => setIsFilterVisible(!isFilterVisible)}
-        style={{
-          backgroundColor: "#DDD",
-          padding: 10,
-          borderRadius: 5,
-          alignItems: "center",
-          marginBottom: 10,
-        }}
+        style={styles.filterButton}
       >
         <Text>Selecionar Filtros</Text>
       </Pressable>
       {isFilterVisible && <Filter onFilter={onFilterSelected} />}
+
+      <Pressable onPress={handleAdd} style={styles.addButton}>
+        <Text style={{ color: "#FFF" }}>Adicionar Transação</Text>
+      </Pressable>
       {transactions.length === 0 && !loading ? (
         <Text style={styles.emptyText}>Nenhuma transação encontrada.</Text>
       ) : (
@@ -183,5 +196,20 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     paddingHorizontal: 10,
     marginBottom: 20,
+  },
+  addButton: {
+    backgroundColor: "#000",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    marginBottom: 10,
+    marginTop: 10,
+  },
+  filterButton: {
+    backgroundColor: "#D8E373",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+    marginBottom: 10,
   },
 });

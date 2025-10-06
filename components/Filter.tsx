@@ -160,9 +160,7 @@ const Filter: React.FC<FilterProps> = ({ onFilter }) => {
         </View>
       </View>
       <Pressable style={{ height: 20 }} onPress={onFilterClean}>
-        <Text style={{ textAlign: "center", color: "#888" }}>
-          Limpar Filtros
-        </Text>
+        <Text style={styles.clearFilterButton}>Limpar Filtros</Text>
       </Pressable>
     </SafeAreaView>
   );
@@ -183,4 +181,8 @@ const styles = StyleSheet.create({
   upTextData: { fontSize: 12, color: "#666", paddingLeft: 10 },
   downText: { fontSize: 16, marginTop: 10, paddingLeft: 10 },
   sessionTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
+  clearFilterButton: {
+    textAlign: "center",
+    color: "#888",
+  },
 });

@@ -44,7 +44,9 @@ export async function addTransaction(
   return transactionData;
 }
 
-export async function getTransactions(uid: string): Promise<(Transaction & { id: string })[]> {
+export async function getTransactions(
+  uid: string
+): Promise<(Transaction & { id: string })[]> {
   const txRef = collection(db, "users", uid, "transactions");
   const snapshot = await getDocs(query(txRef));
 
@@ -55,11 +57,11 @@ export async function getTransactions(uid: string): Promise<(Transaction & { id:
 }
 
 export async function deleteTransaction(uid: string, transactionId: string) {
-    try {
-        const txDoc = doc(db, `users/${uid}/transactions`, transactionId);
-        await deleteDoc(txDoc);
-        console.log("Documento deletado");
-    } catch (error){
-        throw new Error(error);
-    }
+  try {
+    const txDoc = doc(db, `users/${uid}/transactions`, transactionId);
+    await deleteDoc(txDoc);
+    console.log("Documento deletado");
+  } catch (error) {
+    throw new Error(error);
+  }
 }
