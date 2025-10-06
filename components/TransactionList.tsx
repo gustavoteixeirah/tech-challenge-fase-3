@@ -17,7 +17,12 @@ import { useNavigation } from "@react-navigation/native";
 
 const PAGE_SIZE = 10;
 
-export const TransactionList = ({ route }) => {
+export const TransactionList = ({
+  route,
+  hasfilterButton = false,
+  hasAddButton = false,
+  hasSearchBar = false,
+}) => {
   useEffect(() => {
     loadTransactions(0);
   }, []);
@@ -143,24 +148,29 @@ export const TransactionList = ({ route }) => {
 
   return (
     <>
-      <TextInput
-        placeholder="Buscar transações"
-        style={styles.searchInput}
-        onChangeText={(text) => {
-          handleSearch(text);
-        }}
-      />
-      <Pressable
-        onPress={() => setIsFilterVisible(!isFilterVisible)}
-        style={styles.filterButton}
-      >
-        <Text>Selecionar Filtros</Text>
-      </Pressable>
+      {hasSearchBar && (
+        <TextInput
+          placeholder="Buscar transações"
+          style={styles.searchInput}
+          onChangeText={(text) => {
+            handleSearch(text);
+          }}
+        />
+      )}
+      {hasfilterButton && (
+        <Pressable
+          onPress={() => setIsFilterVisible(!isFilterVisible)}
+          style={styles.filterButton}
+        >
+          <Text>Selecionar Filtros</Text>
+        </Pressable>
+      )}
       {isFilterVisible && <Filter onFilter={onFilterSelected} />}
-
-      <Pressable onPress={handleAdd} style={styles.addButton}>
-        <Text style={{ color: "#FFF" }}>Adicionar Transação</Text>
-      </Pressable>
+      {hasAddButton && (
+        <Pressable onPress={handleAdd} style={styles.addButton}>
+          <Text style={{ color: "#FFF" }}>Adicionar Transação</Text>
+        </Pressable>
+      )}
       {transactions.length === 0 && !loading ? (
         <Text style={styles.emptyText}>Nenhuma transação encontrada.</Text>
       ) : (

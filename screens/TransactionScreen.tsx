@@ -5,7 +5,12 @@ import { TransactionList } from "../components/TransactionList";
 const TransactionsScreen = ({ route }) => {
   return (
     <View style={styles.container}>
-      <TransactionList route={route} />
+      <TransactionList
+        route={route}
+        hasAddButton={true}
+        hasSearchBar={true}
+        hasfilterButton={true}
+      />
     </View>
   );
 };
