@@ -1,29 +1,26 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, Pressable, SafeAreaView } from "react-native";
 import DropDownPicker from "react-native-dropdown-picker";
+import RNDateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { TransactionTypeEnum } from "../types/transactions";
-import RNDateTimePicker, {
-  DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
-import { Pressable } from "react-native";
-import { SafeAreaView } from "react-native";
 
 const BORDER_COLOR = "#ccc";
+const categories = ["Alimentação", "Transporte", "Saúde", "Lazer", "Outros"];
 
 type FilterProps = {
   onFilter: (selected: string[]) => void;
 };
 
-const categories = ["Alimentação", "Transporte", "Saúde", "Lazer", "Outros"];
-
 const Filter: React.FC<FilterProps> = ({ onFilter }) => {
   const [transactionType, setTransactionType] = useState<string | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([
     { label: "Transferência", value: TransactionTypeEnum.TRANSFER },
     { label: "Depósito", value: TransactionTypeEnum.DEPOSIT },
   ]);
+
   const [openCategory, setOpenCategory] = useState(false);
   const [categoryItems, setCategoryItems] = useState(
     categories.map((cat) => ({ label: cat, value: cat }))
@@ -33,6 +30,7 @@ const Filter: React.FC<FilterProps> = ({ onFilter }) => {
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [openInitDate, setOpenInitDate] = useState(false);
   const [openEndDate, setOpenEndDate] = useState(false);
+
   useEffect(() => {
     onFilter([
       transactionType || "",
@@ -49,10 +47,10 @@ const Filter: React.FC<FilterProps> = ({ onFilter }) => {
     setEndDate(undefined);
   };
 
-  const setDate = (event: DateTimePickerEvent, date: Date) => {
-    const { type } = event;
+  const setDate = (event: DateTimePickerEvent, date?: Date) => {
+    if (!date) return;
     handleDateChange(
-      type,
+      event.type,
       date,
       openInitDate,
       openEndDate,
@@ -68,18 +66,18 @@ const Filter: React.FC<FilterProps> = ({ onFilter }) => {
     date: Date,
     isInitDateOpen: boolean,
     isEndDateOpen: boolean,
-    setInitDate: (date: Date) => void,
-    setEndDate: (date: Date) => void,
-    setOpenInitDate: (open: boolean) => void,
-    setOpenEndDate: (open: boolean) => void
+    setInit: (date: Date) => void,
+    setEnd: (date: Date) => void,
+    setOpenInit: (open: boolean) => void,
+    setOpenEnd: (open: boolean) => void
   ) => {
     if (type === "set") {
       if (isInitDateOpen) {
-        setInitDate(date);
-        setOpenInitDate(false);
+        setInit(date);
+        setOpenInit(false);
       } else if (isEndDateOpen) {
-        setEndDate(date);
-        setOpenEndDate(false);
+        setEnd(date);
+        setOpenEnd(false);
       }
     }
   };
@@ -88,42 +86,35 @@ const Filter: React.FC<FilterProps> = ({ onFilter }) => {
     <SafeAreaView>
       <View>
         <Text style={styles.sessionTitle}>Filtrar por periodo</Text>
+
         <Pressable onPress={() => setOpenInitDate(true)}>
           <View style={styles.dataContainer}>
             <Text style={styles.upText}>Data Inicial</Text>
-            {initDate && (
-              <Text style={styles.downText}>
-                {initDate.toLocaleDateString("pt-BR")}
-              </Text>
-            )}
+            {initDate ? (
+              <Text style={styles.downText}>{initDate.toLocaleDateString("pt-BR")}</Text>
+            ) : null}
           </View>
         </Pressable>
+
         <Pressable onPress={() => setOpenEndDate(true)}>
           <View style={styles.dataContainer}>
             <Text style={styles.upText}>Data Final</Text>
-            {endDate && (
-              <Text style={styles.downText}>
-                {endDate.toLocaleDateString("pt-BR")}
-              </Text>
-            )}
+            {endDate ? (
+              <Text style={styles.downText}>{endDate.toLocaleDateString("pt-BR")}</Text>
+            ) : null}
           </View>
         </Pressable>
-        <View>
-          {openInitDate && (
-            <RNDateTimePicker
-              locale="pt-BR"
-              value={new Date()}
-              onChange={setDate}
-            />
-          )}
-          {openEndDate && (
-            <RNDateTimePicker
-              locale="pt-BR"
-              value={new Date()}
-              onChange={setDate}
-            />
-          )}
-          <Text style={styles.sessionTitle}>Filtrar por opção</Text>
+
+        {openInitDate && (
+          <RNDateTimePicker locale="pt-BR" value={initDate || new Date()} onChange={setDate} />
+        )}
+        {openEndDate && (
+          <RNDateTimePicker locale="pt-BR" value={endDate || new Date()} onChange={setDate} />
+        )}
+
+        <Text style={styles.sessionTitle}>Filtrar por opção</Text>
+
+        <View style={{ zIndex: 2000 }}>
           <DropDownPicker
             open={open}
             value={transactionType}
@@ -132,7 +123,7 @@ const Filter: React.FC<FilterProps> = ({ onFilter }) => {
             setValue={setTransactionType}
             setItems={setItems}
             style={styles.dropdown}
-            dropDownContainerStyle={{ borderColor: BORDER_COLOR, zIndex: 5000 }}
+            dropDownContainerStyle={{ borderColor: BORDER_COLOR, zIndex: 2000 }}
             placeholder="Selecione o tipo de transação"
             onOpen={() => {
               setOpenCategory(false);
@@ -140,7 +131,9 @@ const Filter: React.FC<FilterProps> = ({ onFilter }) => {
             }}
             onChangeValue={(value) => setTransactionType(value || null)}
           />
+        </View>
 
+        <View style={{ zIndex: 1000, marginTop: 10 }}>
           <DropDownPicker
             open={openCategory}
             value={selectedCategory}
@@ -149,7 +142,7 @@ const Filter: React.FC<FilterProps> = ({ onFilter }) => {
             setValue={setSelectedCategory}
             setItems={setCategoryItems}
             style={styles.dropdown}
-            dropDownContainerStyle={{ borderColor: BORDER_COLOR }}
+            dropDownContainerStyle={{ borderColor: BORDER_COLOR, zIndex: 1000 }}
             placeholder="Selecione a categoria"
             onOpen={() => {
               setOpen(false);
@@ -159,6 +152,7 @@ const Filter: React.FC<FilterProps> = ({ onFilter }) => {
           />
         </View>
       </View>
+
       <Pressable style={{ height: 20 }} onPress={onFilterClean}>
         <Text style={styles.clearFilterButton}>Limpar Filtros</Text>
       </Pressable>
@@ -178,7 +172,6 @@ const styles = StyleSheet.create({
   },
   dropdown: { borderColor: BORDER_COLOR, borderRadius: 6, marginBottom: 15 },
   upText: { fontSize: 16, color: "#666", paddingLeft: 10 },
-  upTextData: { fontSize: 12, color: "#666", paddingLeft: 10 },
   downText: { fontSize: 16, marginTop: 10, paddingLeft: 10 },
   sessionTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
   clearFilterButton: {
