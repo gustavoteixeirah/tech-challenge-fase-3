@@ -91,7 +91,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish }) => {
 
           {/* Título */}
           <Text style={styles.title}>Tech Challenge</Text>
-          <Text style={styles.subtitle}>Fase 3</Text>
+          <Text style={styles.subtitle}>Fase 3 - Grupo 5</Text>
 
           {/* Descrição */}
           <Text style={styles.description}>
