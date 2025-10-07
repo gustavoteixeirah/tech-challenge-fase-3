@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { getTransactions, deleteTransaction } from "../services/transactions";
 import { useAuth } from "../auth/AuthContext";
 import { Transaction } from "../types/transactions";
@@ -10,27 +10,45 @@ type Props = {
   route?: any;
   hasAddButton?: boolean;
   onTransactionsChanged?: () => void;
-  disableScroll?: boolean;   // quando true, NÃO usar FlatList
-  filters?: string[];        // mantido para compatibilidade futura
+  disableScroll?: boolean;   // quando true, NÃO usar FlatList (evita nested VirtualizedList)
+  filters?: string[];        // mantido p/ compatibilidade (não aplicamos filtro aqui)
 };
 
-export function TransactionList({ hasAddButton, onTransactionsChanged, disableScroll }: Props) {
+export function TransactionList({
+  hasAddButton,
+  onTransactionsChanged,
+  disableScroll,
+}: Props) {
   const navigation = useNavigation();
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const sortTxs = (txs: Transaction[]) =>
+    [...txs].sort((a, b) => {
+      const ta = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tb = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return tb - ta;
+    });
+
   async function load() {
     if (!user?.uid) return;
     setLoading(true);
     const txs = await getTransactions(user.uid);
-    setTransactions(txs);
+    setTransactions(sortTxs(txs));
     setLoading(false);
   }
 
   useEffect(() => {
     load();
   }, [user?.uid]);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      load();
+      onTransactionsChanged?.(); // garante que a Home recalcule saldo ao voltar
+    }, [user?.uid])
+  );
 
   const handleDelete = async (id?: string) => {
     if (!user?.uid || !id) return;
@@ -55,14 +73,19 @@ export function TransactionList({ hasAddButton, onTransactionsChanged, disableSc
   );
 
   if (disableScroll) {
+    // Sem FlatList quando estiver dentro de ScrollView (Home) — evita o warning de aninhamento
     return (
       <View>
-        {transactions.map((item, idx) => (
-          <View key={item.id ?? String(idx)}>
-            <ItemRow item={item} />
-            {idx < transactions.length - 1 ? <View style={styles.separator} /> : null}
-          </View>
-        ))}
+        {transactions.length === 0 ? (
+          <Text style={styles.empty}>Sem transações no período.</Text>
+        ) : (
+          transactions.map((item, idx) => (
+            <View key={item.id ?? String(idx)}>
+              <ItemRow item={item} />
+              {idx < transactions.length - 1 ? <View style={styles.separator} /> : null}
+            </View>
+          ))
+        )}
 
         {hasAddButton ? (
           <TouchableOpacity
@@ -84,6 +107,7 @@ export function TransactionList({ hasAddButton, onTransactionsChanged, disableSc
       refreshing={loading}
       onRefresh={load}
       ItemSeparatorComponent={() => <View style={styles.separator} />}
+      ListEmptyComponent={<Text style={styles.empty}>Sem transações no período.</Text>}
       ListFooterComponent={
         hasAddButton ? (
           <TouchableOpacity
@@ -131,5 +155,10 @@ const styles = StyleSheet.create({
   addText: {
     color: "white",
     fontWeight: "bold",
+  },
+  empty: {
+    color: "#666",
+    textAlign: "center",
+    paddingVertical: 12,
   },
 });
