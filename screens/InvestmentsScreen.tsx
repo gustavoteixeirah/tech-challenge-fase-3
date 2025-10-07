@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, StyleSheet, Dimensions, FlatList } from "react-native";
 import { LineChart } from "react-native-chart-kit";
 import { Investment, InvestmentBR, TipoInvestimentoBR } from "../types/investments";
+import CustomHeader from "../components/CustomHeader";
 
 
 const investments: InvestmentBR[] = [
@@ -26,7 +27,9 @@ const investmentData = {
 export default function InvestmentsScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Evolução</Text>
+      <CustomHeader title="Investimentos" showUserInfo={true} showMenuButton={true} />
+      <View style={styles.content}>
+        <Text style={styles.title}>Evolução</Text>
       <LineChart
         data={investmentData}
         width={Dimensions.get("window").width - 32}
@@ -60,6 +63,7 @@ export default function InvestmentsScreen() {
         )}
         style={{ width: "100%" }}
       />
+      </View>
     </View>
   );
 }
@@ -67,8 +71,11 @@ export default function InvestmentsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
     backgroundColor: "#fafafa",
+  },
+  content: {
+    flex: 1,
+    padding: 16,
     alignItems: "center",
   },
   title: {

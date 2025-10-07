@@ -7,13 +7,15 @@ import { View, ActivityIndicator } from "react-native";
 import SignInScreen from "./screens/SignInScreen";
 import SignUpScreen from "./screens/SignUpScreen";
 import HomeScreen from "./screens/HomeScreen";
-import { createDrawerNavigator } from "@react-navigation/drawer";
+import { createDrawerNavigator, DrawerContentScrollView } from "@react-navigation/drawer";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Transactions from "./screens/TransactionScreen";
 import Toast from "react-native-toast-message";
 import NewTransactionScreen from "./screens/NewTransactionScreen";
 import InvestmentsScreen from "./screens/InvestmentsScreen";
 import SplashScreen from "./screens/SplashScreen";
+import CustomHeader from "./components/CustomHeader";
+import DrawerHeaderSimple from "./components/DrawerHeaderSimple";
 
 const Drawer = createDrawerNavigator();
 
@@ -39,24 +41,33 @@ function Router() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <Drawer.Navigator
         screenOptions={{
-          headerShown: true,
+          headerShown: false, // Desabilita o header padrão
           drawerStyle: {
             paddingTop: 20,
-            backgroundColor: "#EBE8ED",
+            backgroundColor: "#000000",
+            width: 280,
           },
           drawerLabelStyle: {
             fontSize: 16,
-            color: "#000",
+            color: "#FFFFFF",
+            fontWeight: "500",
           },
-          drawerActiveTintColor: "#ccc",
+          drawerActiveTintColor: "#d8e373",
+          drawerInactiveTintColor: "#CCCCCC",
           drawerItemStyle: {
             borderBottomWidth: 1,
-            borderColor: "#ccc",
+            borderColor: "rgba(216, 227, 115, 0.2)",
             borderRadius: 0,
+            marginHorizontal: 10,
+            marginVertical: 2,
           },
-          drawerInactiveTintColor: "#000",
-          headerTitleAlign: "center",
+          drawerActiveBackgroundColor: "rgba(216, 227, 115, 0.1)",
         }}
+        drawerContent={(props) => (
+          <View style={{ flex: 1 }}>
+            <DrawerHeaderSimple navigation={props.navigation} />
+          </View>
+        )}
       >
         {user ? (
           // App protegido
@@ -64,19 +75,24 @@ function Router() {
             <Drawer.Screen
               name="Home"
               component={HomeScreen}
-              options={{ title: "Dashboard", drawerLabel: "Dashboard" }}
+              options={{ 
+                title: "Dashboard",
+                drawerItemStyle: { display: "none" },
+              }}
             />
             <Drawer.Screen
               name="Transactions"
               component={Transactions}
-              options={{ title: "Extrato", drawerLabel: "Extrato" }}
+              options={{ 
+                title: "Extrato",
+                drawerItemStyle: { display: "none" },
+              }}
             />
             <Drawer.Screen
               name="New"
               component={NewTransactionScreen}
               options={{
                 title: "Nova Transação",
-                drawerLabel: "Nova Transação",
                 drawerItemStyle: { display: "none" },
               }}
             />
@@ -85,7 +101,7 @@ function Router() {
               component={InvestmentsScreen}
               options={{
                 title: "Investimentos",
-                drawerLabel: "Investimentos",
+                drawerItemStyle: { display: "none" },
               }}
             />
           </>

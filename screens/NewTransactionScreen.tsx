@@ -28,6 +28,7 @@ import {
 } from "../types/transactions";
 import Toast from "react-native-toast-message";
 import { useNavigation } from "@react-navigation/native";
+import CustomHeader from "../components/CustomHeader";
 
 function showToast(message: string, type: "success" | "error" = "error") {
   Toast.show({
@@ -184,7 +185,14 @@ export default function NewTransactionScreen({ route }) {
 
   return (
     <View style={styles.container}>
-      <Text style={{ color: "#8d8d8dff" }}>*Itens Obrigatórios</Text>
+      <CustomHeader 
+        title="Nova Transação" 
+        showUserInfo={false}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
+      />
+      <View style={styles.content}>
+        <Text style={{ color: "#8d8d8dff" }}>*Itens Obrigatórios</Text>
       <Text style={styles.label}>Tipo de Transação*</Text>
       <DropDownPicker
         open={open}
@@ -243,6 +251,7 @@ export default function NewTransactionScreen({ route }) {
         </View>
       </TouchableOpacity>
       <View style={{ height: 10 }} />
+      </View>
     </View>
   );
 }
@@ -250,10 +259,13 @@ export default function NewTransactionScreen({ route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 50,
-    paddingTop: 40,
-    gap: 8,
     backgroundColor: "#fff",
+  },
+  content: {
+    flex: 1,
+    padding: 50,
+    paddingTop: 20,
+    gap: 8,
   },
   label: { fontSize: 16, marginBottom: 5 },
   input: {
