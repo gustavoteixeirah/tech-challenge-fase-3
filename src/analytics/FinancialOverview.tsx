@@ -4,9 +4,7 @@ import { BarChart, PieChart } from "react-native-gifted-charts";
 import { Transaction, TransactionTypeEnum } from "../../types/transactions";
 import { Ionicons } from "@expo/vector-icons";
 
-type Props = {
-  transactions: Transaction[];
-};
+type Props = { transactions: Transaction[] };
 
 const COLORS = {
   text: "#0F172A",
@@ -20,8 +18,7 @@ const COLORS = {
   extras: ["#A3B81F", "#7CA20E", "#4D7C0F", "#355E3B"],
 };
 
-const toBRL = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const toBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export default function FinancialOverview({ transactions }: Props) {
   const [selected, setSelected] = useState<{ label: string; value: number } | null>(null);
@@ -33,27 +30,17 @@ export default function FinancialOverview({ transactions }: Props) {
 
     for (const t of transactions || []) {
       const val = Math.abs(Number(t?.amount ?? 0));
-      const tType =
-        typeof t?.type === "string"
-          ? t.type.toUpperCase()
-          : (t?.type as unknown as string);
-
-      const isDeposit =
-        tType === TransactionTypeEnum.DEPOSIT || tType === "DEPOSIT";
-
-      if (isDeposit) {
-        inc += val;
-      } else {
+      const tType = (typeof t?.type === "string" ? t.type : `${t?.type}`)?.toUpperCase();
+      const isDeposit = tType === TransactionTypeEnum.DEPOSIT || tType === "DEPOSIT";
+      if (isDeposit) inc += val;
+      else {
         exp += val;
         const cat = (t?.category as string) || "Outros";
         catMap.set(cat, (catMap.get(cat) || 0) + val);
       }
     }
 
-    const entries = Array.from(catMap.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6);
-
+    const entries = Array.from(catMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6);
     const colors = [COLORS.lime, COLORS.limeDark, ...COLORS.extras];
     const pieData = entries.map(([label, value], i) => ({
       value,
@@ -63,6 +50,14 @@ export default function FinancialOverview({ transactions }: Props) {
 
     return { incomes: inc, expenses: exp, pieData, totalExpenses: exp };
   }, [transactions]);
+
+  const maxRaw = Math.max(incomes, expenses);
+  let yMax = 10000;
+  if (maxRaw > 10000 && maxRaw <= 50000) yMax = 50000;
+  else if (maxRaw > 50000 && maxRaw <= 100000) yMax = 100000;
+  else if (maxRaw > 100000) yMax = Math.ceil(maxRaw / 10000) * 10000;
+  const sections = Math.max(1, Math.round(yMax / 10000));
+  const yLabels = Array.from({ length: sections + 1 }, (_, i) => (i * 10000).toLocaleString("pt-BR"));
 
   const chartData = pieData.map((s) => ({
     ...s,
@@ -91,7 +86,11 @@ export default function FinancialOverview({ transactions }: Props) {
           animationDuration={650}
           yAxisThickness={0}
           xAxisThickness={0}
-          noOfSections={4}
+          noOfSections={sections}
+          stepValue={10000}
+          maxValue={yMax}
+          yAxisLabelTexts={yLabels}
+          yAxisLabelWidth={48}
           dashWidth={2}
           dashGap={4}
           rulesColor={COLORS.line}
@@ -106,7 +105,7 @@ export default function FinancialOverview({ transactions }: Props) {
         />
       </View>
 
-      <View style={styles.card}>
+      <View style={[styles.card, { overflow: "visible" }]}>
         <Text style={styles.title}>Gastos por categoria</Text>
         <Text style={styles.caption}>Somente saídas</Text>
 
@@ -120,25 +119,21 @@ export default function FinancialOverview({ transactions }: Props) {
                 innerRadius={60}
                 showText={false}
                 focusOnPress
-                sectionAutoFocus
+                sectionAutoFocus={false}
                 animationDuration={700}
                 centerLabelComponent={() => {
                   if (selected) {
                     return (
                       <View style={{ alignItems: "center" }}>
                         <Text style={{ color: COLORS.subtext, fontSize: 12 }}>{selected.label}</Text>
-                        <Text style={{ color: COLORS.text, fontWeight: "800" }}>
-                          {toBRL(selected.value)}
-                        </Text>
+                        <Text style={{ color: COLORS.text, fontWeight: "800" }}>{toBRL(selected.value)}</Text>
                       </View>
                     );
                   }
                   return (
                     <View style={{ alignItems: "center" }}>
                       <Text style={{ color: COLORS.subtext, fontSize: 12 }}>Total</Text>
-                      <Text style={{ color: COLORS.text, fontWeight: "800" }}>
-                        {toBRL(totalExpenses)}
-                      </Text>
+                      <Text style={{ color: COLORS.text, fontWeight: "800" }}>{toBRL(totalExpenses)}</Text>
                     </View>
                   );
                 }}
@@ -152,9 +147,7 @@ export default function FinancialOverview({ transactions }: Props) {
                   <Pressable
                     key={String(s.text) + i}
                     style={[styles.legendRow, isActive && styles.legendRowActive]}
-                    onPress={() =>
-                      setSelected({ label: String(s.text), value: Number(s.value) || 0 })
-                    }
+                    onPress={() => setSelected({ label: String(s.text), value: Number(s.value) || 0 })}
                   >
                     <Ionicons
                       name="chevron-forward"
@@ -162,10 +155,7 @@ export default function FinancialOverview({ transactions }: Props) {
                       color={isActive ? COLORS.text : COLORS.subtext}
                     />
                     <View style={[styles.legendDot, { backgroundColor: s.color as string }]} />
-                    <Text
-                      style={[styles.legendText, isActive && styles.legendTextActive]}
-                      numberOfLines={1}
-                    >
+                    <Text style={[styles.legendText, isActive && styles.legendTextActive]} numberOfLines={1}>
                       {s.text} · {toBRL(Number(s.value) || 0)}
                     </Text>
                   </Pressable>
@@ -194,25 +184,11 @@ const styles = StyleSheet.create({
   caption: { fontSize: 12, color: COLORS.subtext, marginBottom: 8 },
   empty: { textAlign: "center", color: COLORS.subtext, paddingVertical: 24 },
   legend: { marginTop: 10, gap: 8 },
-  legendRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-  },
-  legendRowActive: {
-    backgroundColor: "rgba(15, 23, 42, 0.05)",
-  },
+  legendRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 6, paddingHorizontal: 8, borderRadius: 8 },
+  legendRowActive: { backgroundColor: "rgba(15, 23, 42, 0.05)" },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
   legendText: { color: COLORS.text, fontSize: 12, flexShrink: 1 },
   legendTextActive: { fontWeight: "800" },
-  tooltip: {
-    backgroundColor: "#0F172A",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
+  tooltip: { backgroundColor: "#0F172A", paddingHorizontal: 8, paddingVertical: 6, borderRadius: 6 },
   tooltipText: { color: "#fff", fontSize: 12, fontWeight: "700" },
 });

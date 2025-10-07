@@ -17,16 +17,6 @@ export default function HomeScreen() {
   const [balance, setBalance] = React.useState<number>(0);
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
 
-  const getTotalBalance = async () => {
-    const result = await getTransactions(user?.uid || "");
-    const total = result.reduce((acc, transaction) => {
-      return transaction.type === TransactionTypeEnum.DEPOSIT
-        ? acc + transaction.amount
-        : acc - transaction.amount;
-    }, 0);
-    return total;
-  };
-
   const refreshData = async () => {
     const txs = await getTransactions(user?.uid || "");
     setTransactions(txs);
@@ -50,6 +40,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         <UserCard name={display} balance={balance} />
+
         <View
           style={{
             width: "90%",
@@ -73,6 +64,7 @@ export default function HomeScreen() {
               <IconFilter />
             </Pressable>
           </View>
+
           <TransactionList
             route={undefined}
             onTransactionsChanged={refreshData}
@@ -80,10 +72,10 @@ export default function HomeScreen() {
             disableScroll
           />
         </View>
-       <View style={{ width: "90%", marginTop: 12 }}>
-  <FinancialOverview transactions={transactions} />
-</View>
 
+        <View style={{ width: "90%", marginTop: 12 }}>
+          <FinancialOverview transactions={transactions} />
+        </View>
       </ScrollView>
     </View>
   );

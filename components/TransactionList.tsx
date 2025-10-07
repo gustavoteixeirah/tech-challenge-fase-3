@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { getTransactions, deleteTransaction } from "../services/transactions";
@@ -10,7 +10,8 @@ type Props = {
   route?: any;
   hasAddButton?: boolean;
   onTransactionsChanged?: () => void;
-  disableScroll?: boolean;
+  disableScroll?: boolean;   // quando true, NÃO usar FlatList
+  filters?: string[];        // mantido para compatibilidade futura
 };
 
 export function TransactionList({ hasAddButton, onTransactionsChanged, disableScroll }: Props) {
@@ -31,20 +32,21 @@ export function TransactionList({ hasAddButton, onTransactionsChanged, disableSc
     load();
   }, [user?.uid]);
 
-  const handleDelete = async (id: string) => {
-    if (!user?.uid) return;
+  const handleDelete = async (id?: string) => {
+    if (!user?.uid || !id) return;
     await deleteTransaction(user.uid, id);
-    load();
+    await load();
     onTransactionsChanged?.();
   };
 
-  const renderItem = ({ item }: { item: Transaction }) => (
+  const ItemRow = ({ item }: { item: Transaction }) => (
     <View style={styles.item}>
       <View>
-        <Text style={styles.type}>{item.description || item.type}</Text>
+        <Text style={styles.type}>{item.description || String(item.type)}</Text>
         <Text style={styles.amount}>
-          {item.amount.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+          {Number(item.amount).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
         </Text>
+        {item.category ? <Text style={styles.category}>{item.category}</Text> : null}
       </View>
       <TouchableOpacity onPress={() => handleDelete(item.id)}>
         <Ionicons name="trash" size={24} color="black" />
@@ -52,25 +54,44 @@ export function TransactionList({ hasAddButton, onTransactionsChanged, disableSc
     </View>
   );
 
+  if (disableScroll) {
+    return (
+      <View>
+        {transactions.map((item, idx) => (
+          <View key={item.id ?? String(idx)}>
+            <ItemRow item={item} />
+            {idx < transactions.length - 1 ? <View style={styles.separator} /> : null}
+          </View>
+        ))}
+
+        {hasAddButton ? (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => (navigation as any).navigate("New")}
+          >
+            <Text style={styles.addText}>Adicionar Transação</Text>
+          </TouchableOpacity>
+        ) : null}
+      </View>
+    );
+  }
+
   return (
     <FlatList
       data={transactions}
-      keyExtractor={(item) => item.id}
-      renderItem={renderItem}
+      keyExtractor={(item, index) => item.id ?? String(index)}
+      renderItem={({ item }) => <ItemRow item={item} />}
       refreshing={loading}
       onRefresh={load}
-      scrollEnabled={!disableScroll}
-      nestedScrollEnabled={false}
-      removeClippedSubviews={false}
+      ItemSeparatorComponent={() => <View style={styles.separator} />}
       ListFooterComponent={
         hasAddButton ? (
-         <TouchableOpacity
-  style={styles.addButton}
-  onPress={() => (navigation as any).navigate("New")}
->
-  <Text style={styles.addText}>Adicionar Transação</Text>
-</TouchableOpacity>
-
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={() => (navigation as any).navigate("New")}
+          >
+            <Text style={styles.addText}>Adicionar Transação</Text>
+          </TouchableOpacity>
         ) : null
       }
     />
@@ -82,12 +103,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderColor: "#eee",
+  },
+  separator: {
+    height: 1,
+    backgroundColor: "#eee",
   },
   type: {
     fontSize: 14,
     color: "#555",
+  },
+  category: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 2,
   },
   amount: {
     fontSize: 16,
