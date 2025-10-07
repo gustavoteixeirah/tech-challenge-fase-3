@@ -4,7 +4,7 @@ import { useAuth } from "../auth/AuthContext";
 import UserCard from "../components/UserCard";
 import { TransactionList } from "../components/TransactionList";
 import { IconCheck, IconFilter, IconSearch } from "../Icons/Icons/icons";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { getTransactions } from "../services/transactions";
 import { TransactionTypeEnum } from "../types/transactions";
 
@@ -24,9 +24,11 @@ export default function HomeScreen() {
     return total;
   };
 
-  React.useEffect(() => {
-    getTotalBalance().then(setBalance);
-  }, [user?.uid]);
+  useFocusEffect(
+    React.useCallback(() => {
+      getTotalBalance().then(setBalance);
+    }, [user?.uid])
+  );
 
   return (
     <View
@@ -72,7 +74,13 @@ export default function HomeScreen() {
           </Pressable>
         </View>
 
-        <TransactionList route={undefined} />
+        <TransactionList
+          route={undefined}
+          onTransactionsChanged={() => {
+            getTotalBalance().then(setBalance);
+          }}
+          hasAddButton={true}
+        />
       </View>
       <Button title="Sair" onPress={logOut} />
     </View>

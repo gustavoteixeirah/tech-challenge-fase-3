@@ -150,7 +150,7 @@ export default function NewTransactionScreen({ route }) {
       setTransactionType(TransactionTypeEnum.TRANSFER);
       setReceipt(null);
       showToast("Transação adicionada!", "success");
-      navigation.navigate("Transactions" as never, { add: true } as never);
+      navigation.navigate("Home" as never);
     } catch (error: any) {
       Alert.alert("Erro", error.message);
     }
