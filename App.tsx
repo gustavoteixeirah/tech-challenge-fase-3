@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import "react-native-gesture-handler";
 import { NavigationContainer, TabActions } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -13,18 +13,26 @@ import Transactions from "./screens/TransactionScreen";
 import Toast from "react-native-toast-message";
 import NewTransactionScreen from "./screens/NewTransactionScreen";
 import InvestmentsScreen from "./screens/InvestmentsScreen";
+import SplashScreen from "./screens/SplashScreen";
 
 const Drawer = createDrawerNavigator();
 
 function Router() {
   const { user, loading } = useAuth();
+  const [showSplash, setShowSplash] = useState(true);
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator />
-      </View>
-    );
+  useEffect(() => {
+    // Mostra a splash screen por pelo menos 2.5 segundos
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Se ainda está carregando ou mostrando splash, mostra a splash screen
+  if (loading || showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
   }
 
   return (
