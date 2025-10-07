@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { getTransactions, deleteTransaction } from "../services/transactions";
@@ -10,14 +10,15 @@ type Props = {
   route?: any;
   hasAddButton?: boolean;
   onTransactionsChanged?: () => void;
-  disableScroll?: boolean;   // quando true, NÃO usar FlatList (evita nested VirtualizedList)
-  filters?: string[];        // mantido p/ compatibilidade (não aplicamos filtro aqui)
+  disableScroll?: boolean;      // Home usa true para evitar VirtualizedList dentro de ScrollView
+  filters?: string[];            // [type, category, initISO, endISO]
 };
 
 export function TransactionList({
-  hasAddButton,
+  hasAddButton = false,
   onTransactionsChanged,
-  disableScroll,
+  disableScroll = false,
+  filters,
 }: Props) {
   const navigation = useNavigation();
   const { user } = useAuth();
@@ -46,7 +47,7 @@ export function TransactionList({
   useFocusEffect(
     React.useCallback(() => {
       load();
-      onTransactionsChanged?.(); // garante que a Home recalcule saldo ao voltar
+      onTransactionsChanged?.();
     }, [user?.uid])
   );
 
@@ -56,6 +57,32 @@ export function TransactionList({
     await load();
     onTransactionsChanged?.();
   };
+
+  const filtered = useMemo(() => {
+    if (!filters || filters.length < 4) return transactions;
+    const [typeSel, catSel, initISO, endISO] = filters;
+
+    let list = [...transactions];
+
+    if (typeSel) {
+      const tSel = String(typeSel).toUpperCase();
+      list = list.filter((t) => String(t.type).toUpperCase() === tSel);
+    }
+    if (catSel) {
+      const cSel = String(catSel).toUpperCase();
+      list = list.filter((t) => String(t.category || "").toUpperCase() === cSel);
+    }
+    if (initISO) {
+      const init = new Date(initISO);
+      list = list.filter((t) => t.createdAt && new Date(t.createdAt) >= init);
+    }
+    if (endISO) {
+      const end = new Date(endISO);
+      list = list.filter((t) => t.createdAt && new Date(t.createdAt) <= end);
+    }
+
+    return list;
+  }, [transactions, filters]);
 
   const ItemRow = ({ item }: { item: Transaction }) => (
     <View style={styles.item}>
@@ -73,25 +100,21 @@ export function TransactionList({
   );
 
   if (disableScroll) {
-    // Sem FlatList quando estiver dentro de ScrollView (Home) — evita o warning de aninhamento
     return (
       <View>
-        {transactions.length === 0 ? (
+        {filtered.length === 0 ? (
           <Text style={styles.empty}>Sem transações no período.</Text>
         ) : (
-          transactions.map((item, idx) => (
+          filtered.map((item, idx) => (
             <View key={item.id ?? String(idx)}>
               <ItemRow item={item} />
-              {idx < transactions.length - 1 ? <View style={styles.separator} /> : null}
+              {idx < filtered.length - 1 ? <View style={styles.separator} /> : null}
             </View>
           ))
         )}
 
         {hasAddButton ? (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => (navigation as any).navigate("New")}
-          >
+          <TouchableOpacity style={styles.addButton} onPress={() => (navigation as any).navigate("New")}>
             <Text style={styles.addText}>Adicionar Transação</Text>
           </TouchableOpacity>
         ) : null}
@@ -101,7 +124,7 @@ export function TransactionList({
 
   return (
     <FlatList
-      data={transactions}
+      data={filtered}
       keyExtractor={(item, index) => item.id ?? String(index)}
       renderItem={({ item }) => <ItemRow item={item} />}
       refreshing={loading}
@@ -110,10 +133,7 @@ export function TransactionList({
       ListEmptyComponent={<Text style={styles.empty}>Sem transações no período.</Text>}
       ListFooterComponent={
         hasAddButton ? (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => (navigation as any).navigate("New")}
-          >
+          <TouchableOpacity style={styles.addButton} onPress={() => (navigation as any).navigate("New")}>
             <Text style={styles.addText}>Adicionar Transação</Text>
           </TouchableOpacity>
         ) : null

@@ -1,3 +1,4 @@
+// src/screens/HomeScreen.tsx
 import React from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useAuth } from "../auth/AuthContext";
@@ -57,7 +58,15 @@ export default function HomeScreen() {
               gap: 12,
             }}
           >
-            <Text style={{ fontSize: 25, marginTop: 10, marginBottom: 10, fontWeight: "bold", flex: 1 }}>
+            <Text
+              style={{
+                fontSize: 25,
+                marginTop: 10,
+                marginBottom: 10,
+                fontWeight: "bold",
+                flex: 1,
+              }}
+            >
               Extrato
             </Text>
             <Pressable onPress={() => (navigation as any).navigate("Transactions")}>
