@@ -12,6 +12,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Transactions from "./screens/TransactionScreen";
 import Toast from "react-native-toast-message";
 import NewTransactionScreen from "./screens/NewTransactionScreen";
+import InvestmentsScreen from "./screens/InvestmentsScreen";
 
 const Drawer = createDrawerNavigator();
 
@@ -69,6 +70,14 @@ function Router() {
                 title: "Nova Transação",
                 drawerLabel: "Nova Transação",
                 drawerItemStyle: { display: "none" },
+              }}
+            />
+            <Drawer.Screen
+              name="Investments"
+              component={InvestmentsScreen}
+              options={{
+                title: "Investimentos",
+                drawerLabel: "Investimentos",
               }}
             />
           </>
