@@ -7,7 +7,10 @@ import { View, ActivityIndicator } from "react-native";
 import SignInScreen from "./screens/SignInScreen";
 import SignUpScreen from "./screens/SignUpScreen";
 import HomeScreen from "./screens/HomeScreen";
-import { createDrawerNavigator, DrawerContentScrollView } from "@react-navigation/drawer";
+import {
+  createDrawerNavigator,
+  DrawerContentScrollView,
+} from "@react-navigation/drawer";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Transactions from "./screens/TransactionScreen";
 import Toast from "react-native-toast-message";
@@ -16,9 +19,53 @@ import InvestmentsScreen from "./screens/InvestmentsScreen";
 import SplashScreen from "./screens/SplashScreen";
 import CustomHeader from "./components/CustomHeader";
 import DrawerHeaderSimple from "./components/DrawerHeaderSimple";
+import EditTransactionScreen from "./screens/EditTransactionScreen";
+import { TransactionProvider } from "./context/TransactionContext";
 
 const Drawer = createDrawerNavigator();
+const Stack = createNativeStackNavigator();
 
+// Drawer Navigator (main menu)
+function MainDrawer() {
+  return (
+    <Drawer.Navigator
+      screenOptions={{
+        headerShown: true,
+        drawerStyle: {
+          paddingTop: 20,
+          backgroundColor: "#EBE8ED",
+        },
+        drawerLabelStyle: { fontSize: 16, color: "#000" },
+        drawerActiveTintColor: "#ccc",
+        drawerInactiveTintColor: "#000",
+        drawerItemStyle: { borderBottomWidth: 1, borderColor: "#ccc" },
+        headerTitleAlign: "center",
+      }}
+    >
+      <Drawer.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{ title: "Dashboard", drawerLabel: "Dashboard" }}
+      />
+      <Drawer.Screen
+        name="Transactions"
+        component={Transactions}
+        options={{ title: "Extrato", drawerLabel: "Extrato" }}
+      />
+      <Drawer.Screen
+        name="New"
+        component={NewTransactionScreen}
+        options={{
+          title: "Nova Transação",
+          drawerLabel: "Nova Transação",
+          drawerItemStyle: { display: "none" }, // hide from drawer
+        }}
+      />
+    </Drawer.Navigator>
+  );
+}
+
+// Main Router handling auth & stack screens
 function Router() {
   const { user, loading } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
@@ -75,7 +122,7 @@ function Router() {
             <Drawer.Screen
               name="Home"
               component={HomeScreen}
-              options={{ 
+              options={{
                 title: "Dashboard",
                 drawerItemStyle: { display: "none" },
               }}
@@ -83,7 +130,7 @@ function Router() {
             <Drawer.Screen
               name="Transactions"
               component={Transactions}
-              options={{ 
+              options={{
                 title: "Extrato",
                 drawerItemStyle: { display: "none" },
               }}
@@ -93,6 +140,14 @@ function Router() {
               component={NewTransactionScreen}
               options={{
                 title: "Nova Transação",
+                drawerItemStyle: { display: "none" },
+              }}
+            />
+            <Drawer.Screen
+              name="Edit"
+              component={EditTransactionScreen}
+              options={{
+                title: "Editar Transação",
                 drawerItemStyle: { display: "none" },
               }}
             />
@@ -136,10 +191,12 @@ function Router() {
 export default function App() {
   return (
     <AuthProvider>
-      <NavigationContainer>
-        <Router />
-        <Toast />
-      </NavigationContainer>
+      <TransactionProvider>
+        <NavigationContainer>
+          <Router />
+          <Toast />
+        </NavigationContainer>
+      </TransactionProvider>
     </AuthProvider>
   );
 }

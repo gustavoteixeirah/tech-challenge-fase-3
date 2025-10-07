@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, Button, Pressable } from "react-native";
+import { View, Text, Button, Pressable, ScrollView } from "react-native";
 import { useAuth } from "../auth/AuthContext";
 import UserCard from "../components/UserCard";
 import { TransactionList } from "../components/TransactionList";
@@ -8,6 +8,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { getTransactions } from "../services/transactions";
 import { TransactionTypeEnum } from "../types/transactions";
 import CustomHeader from "../components/CustomHeader";
+import NewTransactionScreen from "./NewTransactionScreen";
 
 export default function HomeScreen() {
   const { user, logOut } = useAuth();
@@ -33,8 +34,12 @@ export default function HomeScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <CustomHeader title="Dashboard" showUserInfo={true} showMenuButton={true} />
-      
+      <CustomHeader
+        title="Dashboard"
+        showUserInfo={true}
+        showMenuButton={true}
+      />
+
       <View
         style={{
           flex: 1,
@@ -74,7 +79,9 @@ export default function HomeScreen() {
             >
               Extrato
             </Text>
-            <Pressable onPress={() => (navigation as any).navigate("Transactions")}>
+            <Pressable
+              onPress={() => (navigation as any).navigate("Transactions")}
+            >
               <IconFilter />
             </Pressable>
           </View>

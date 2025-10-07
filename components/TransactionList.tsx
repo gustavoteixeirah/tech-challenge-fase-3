@@ -15,6 +15,8 @@ import { useAuth } from "../auth/AuthContext";
 import Filter from "./Filter";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import Toast from "react-native-toast-message";
+import EditTransactionScreen from "../screens/EditTransactionScreen";
+import { useTransaction } from "../context/TransactionContext";
 
 const PAGE_SIZE = 10;
 
@@ -30,15 +32,17 @@ export const TransactionList = ({
   }, []);
 
   useFocusEffect(
-    React.useCallback(() => {
-      loadTransactions(0);
-    }, [])
+    refreshTransactions
+    // React.useCallback(() => {
+    //   loadTransactions(0);
+    // }, [])
   );
 
   const { user } = useAuth();
   const uid = user?.uid;
   const navigation = useNavigation();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { setTransaction } = useTransaction(); // contexto de editar transação
 
   const [page, setPage] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -65,19 +69,22 @@ export const TransactionList = ({
   };
 
   const handleDeleteTransaction = async (id: string): Promise<boolean> => {
-    if (!uid) return;
+    if (!uid) return false; // return false instead of undefined
 
     try {
       await deleteTransaction(uid, id);
       showToast("Transação deletada!", "success");
-      return true;
+      await refreshTransactions();
+      return true; // Indica sucesso
     } catch (error: any) {
       showToast(error.message, "error");
-      return false;
+      return false; // Indica falha
     }
   };
-  const handleEdit = (id: string) => {
-    console.log("Editar", `Editar transação ${id}`);
+
+  const handleEdit = (transaction: Transaction) => {
+    setTransaction(transaction); // salva no contexto
+    (navigation as any).navigate("Edit");
   };
 
   const handleAdd = () => {
@@ -126,7 +133,7 @@ export const TransactionList = ({
   };
 
   function onFilterSelected(selected: string[]): void {
-    console.log("Selected filters:", selected);
+    // console.log("Selected filters:", selected);
 
     const [typeFilter, categoryFilter, initDateFilter, endDateFilter] =
       selected;
