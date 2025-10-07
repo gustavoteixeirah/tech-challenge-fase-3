@@ -1,15 +1,21 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { IconEye, IconEyeOff } from "../Icons/Icons/icons";
-import { TransactionList } from "./TransactionList";
+
 
 type UserCardProps = {
   name: string;
   balance: number;
 };
 
-const formatCurrency = (value: number) =>
-  value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const formatCurrency = (value: number): string => {
+  const formattedValue = Math.abs(value).toLocaleString("pt-BR", { 
+    style: "currency", 
+    currency: "BRL" 
+  });
+  
+  return value >= 0 ? formattedValue : `- ${formattedValue}`;
+};
 
 const getToday = () => {
   const today = new Date();

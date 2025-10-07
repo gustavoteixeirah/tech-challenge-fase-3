@@ -4,9 +4,10 @@ import { useAuth } from "../auth/AuthContext";
 import UserCard from "../components/UserCard";
 import { TransactionList } from "../components/TransactionList";
 import { IconCheck, IconFilter, IconSearch } from "../Icons/Icons/icons";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { getTransactions } from "../services/transactions";
 import { TransactionTypeEnum } from "../types/transactions";
+import CustomHeader from "../components/CustomHeader";
 
 export default function HomeScreen() {
   const { user, logOut } = useAuth();
@@ -24,57 +25,69 @@ export default function HomeScreen() {
     return total;
   };
 
-  React.useEffect(() => {
-    getTotalBalance().then(setBalance);
-  }, [user?.uid]);
+  useFocusEffect(
+    React.useCallback(() => {
+      getTotalBalance().then(setBalance);
+    }, [user?.uid])
+  );
 
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "flex-start",
-        alignItems: "center",
-        gap: 8,
-      }}
-    >
-      <UserCard name={display} balance={balance} />
-
+    <View style={{ flex: 1 }}>
+      <CustomHeader title="Dashboard" showUserInfo={true} showMenuButton={true} />
+      
       <View
         style={{
           flex: 1,
-          width: "90%",
-          borderRadius: 12,
-          backgroundColor: "#FFF",
-          padding: 20,
+          justifyContent: "flex-start",
+          alignItems: "center",
+          gap: 8,
+          paddingTop: 16,
         }}
       >
+        <UserCard name={display} balance={balance} />
+
         <View
           style={{
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexDirection: "row",
-            gap: 12,
+            flex: 1,
+            width: "90%",
+            borderRadius: 12,
+            backgroundColor: "#FFF",
+            padding: 20,
           }}
         >
-          <Text
+          <View
             style={{
-              fontSize: 25,
-              marginTop: 10,
-              marginBottom: 10,
-              fontWeight: "bold",
-              flex: 1,
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexDirection: "row",
+              gap: 12,
             }}
           >
-            Extrato
-          </Text>
-          <Pressable onPress={() => navigation.navigate("Transactions")}>
-            <IconFilter />
-          </Pressable>
-        </View>
+            <Text
+              style={{
+                fontSize: 25,
+                marginTop: 10,
+                marginBottom: 10,
+                fontWeight: "bold",
+                flex: 1,
+              }}
+            >
+              Extrato
+            </Text>
+            <Pressable onPress={() => (navigation as any).navigate("Transactions")}>
+              <IconFilter />
+            </Pressable>
+          </View>
 
-        <TransactionList route={undefined} />
+          <TransactionList
+            route={undefined}
+            onTransactionsChanged={() => {
+              getTotalBalance().then(setBalance);
+            }}
+            hasAddButton={true}
+          />
+        </View>
       </View>
-      <Button title="Sair" onPress={logOut} />
     </View>
   );
 }

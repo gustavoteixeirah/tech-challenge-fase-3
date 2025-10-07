@@ -13,7 +13,8 @@ import TransactionItem from "./TransactionItem";
 import { deleteTransaction, getTransactions } from "../services/transactions";
 import { useAuth } from "../auth/AuthContext";
 import Filter from "./Filter";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import Toast from "react-native-toast-message";
 
 const PAGE_SIZE = 10;
 
@@ -22,10 +23,17 @@ export const TransactionList = ({
   hasfilterButton = false,
   hasAddButton = false,
   hasSearchBar = false,
+  onTransactionsChanged = () => {},
 }) => {
-  useEffect(() => {
+  const refreshTransactions = React.useCallback(() => {
     loadTransactions(0);
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadTransactions(0);
+    }, [])
+  );
 
   const { user } = useAuth();
   const uid = user?.uid;
@@ -40,7 +48,6 @@ export const TransactionList = ({
 
   const loadTransactions = async (nextPage = 0) => {
     if (loading || !hasMore) return;
-    console.log("Loading transactions for page:", loading, hasMore);
     setLoading(true);
 
     const result = await fetchTransactions(nextPage);
@@ -62,10 +69,11 @@ export const TransactionList = ({
 
     try {
       await deleteTransaction(uid, id);
-      Alert.alert("Success", "Transação deletada!");
-      loadTransactions(0);
+      showToast("Transação deletada!", "success");
+      return true;
     } catch (error: any) {
-      Alert.alert("Error", error.message);
+      showToast(error.message, "error");
+      return false;
     }
   };
   const handleEdit = (id: string) => {
@@ -92,6 +100,10 @@ export const TransactionList = ({
     const success = await handleDeleteTransaction(id);
     if (success) {
       setTransactions((prev) => prev.filter((t) => t.id !== id));
+      setAllTransactions((prev) => prev.filter((t) => t.id !== id));
+      // Opcional: recarregar a lista do backend
+      await loadTransactions(0);
+      onTransactionsChanged();
     }
   };
 
@@ -145,7 +157,15 @@ export const TransactionList = ({
     setHasMore(false);
     setLoading(false);
   }
-
+  function showToast(message: string, type: "success" | "error" = "error") {
+    Toast.show({
+      type,
+      text1: message,
+      position: "top",
+      visibilityTime: 3000,
+      autoHide: true,
+    });
+  }
   return (
     <>
       {hasSearchBar && (
@@ -216,7 +236,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   filterButton: {
-    backgroundColor: "#D8E373",
+    backgroundColor: "#d8e373ff",
     padding: 10,
     borderRadius: 5,
     alignItems: "center",
