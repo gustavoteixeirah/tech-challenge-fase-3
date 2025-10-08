@@ -1,4 +1,3 @@
-// src/screens/HomeScreen.tsx
 import React from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { useAuth } from "../auth/AuthContext";
@@ -36,18 +35,21 @@ export default function HomeScreen() {
   return (
     <View style={{ flex: 1 }}>
       <CustomHeader title="Dashboard" showUserInfo={true} showMenuButton={true} />
+
       <ScrollView
-        contentContainerStyle={{ alignItems: "center", paddingTop: 16, paddingBottom: 24, gap: 8 }}
-        showsVerticalScrollIndicator={false}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ alignItems: "center", paddingVertical: 16 }}
       >
         <UserCard name={display} balance={balance} />
 
+        {/* Card de Extrato */}
         <View
           style={{
             width: "90%",
             borderRadius: 12,
             backgroundColor: "#FFF",
             padding: 20,
+            marginTop: 12,
           }}
         >
           <View
@@ -61,14 +63,14 @@ export default function HomeScreen() {
             <Text
               style={{
                 fontSize: 25,
-                marginTop: 10,
-                marginBottom: 10,
                 fontWeight: "bold",
                 flex: 1,
               }}
             >
               Extrato
             </Text>
+
+            {/* Botão de filtro → leva à tela Transactions */}
             <Pressable onPress={() => (navigation as any).navigate("Transactions")}>
               <IconFilter />
             </Pressable>
@@ -82,6 +84,7 @@ export default function HomeScreen() {
           />
         </View>
 
+        {/* Gráficos */}
         <View style={{ width: "90%", marginTop: 12 }}>
           <FinancialOverview transactions={transactions} />
         </View>
