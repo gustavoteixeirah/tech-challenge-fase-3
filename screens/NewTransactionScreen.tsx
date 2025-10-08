@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,13 +6,11 @@ import {
   Button,
   Alert,
   StyleSheet,
-  FlatList,
   Image,
   TouchableOpacity,
 } from "react-native";
 import {
   addTransaction,
-  getTransactions,
   deleteTransaction,
 } from "../services/transactions";
 import * as ImagePicker from "expo-image-picker";
@@ -27,6 +25,8 @@ import {
   Transaction,
 } from "../types/transactions";
 import Toast from "react-native-toast-message";
+import { useNavigation } from "@react-navigation/native";
+import CustomHeader from "../components/CustomHeader";
 
 function showToast(message: string, type: "success" | "error" = "error") {
   Toast.show({
@@ -38,33 +38,27 @@ function showToast(message: string, type: "success" | "error" = "error") {
   });
 }
 
-export default function NewTransactionScreen() {
+export default function NewTransactionScreen({ route }) {
   const { user } = useAuth();
   const uid = user?.uid;
+  const navigation = useNavigation();
 
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const editingTx = route?.params?.transaction as Transaction | undefined;
+
   const [transactionType, setTransactionType] = useState<TransactionTypeEnum>(
-    TransactionTypeEnum.TRANSFER
+    editingTx?.type ?? TransactionTypeEnum.TRANSFER
   );
-  const [amount, setAmount] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<TransactionCategoryEnum | "">("");
+  const [amount, setAmount] = useState(editingTx ? String(editingTx.amount) : "");
+  const [description, setDescription] = useState(editingTx?.description ?? "");
+  // categoria como string; validamos contra o enum ao salvar
+  const [category, setCategory] = useState<string>(editingTx?.category ?? "");
+
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([
     { label: "Transferência", value: TransactionTypeEnum.TRANSFER },
     { label: "Depósito", value: TransactionTypeEnum.DEPOSIT },
   ]);
   const [receipt, setReceipt] = useState<ImagePicker.Asset | null>(null);
-
-  // Carregar transações do usuário
-  useEffect(() => {
-    if (!uid) return;
-    async function load() {
-      const data = await getTransactions(uid);
-      setTransactions(data);
-    }
-    load();
-  }, [uid]);
 
   const normalizeAmount = (value: string) => value.replace(",", ".");
 
@@ -84,7 +78,6 @@ export default function NewTransactionScreen() {
   }
 
   async function handleSave() {
-    // Itens obrigatórios
     if (!uid) {
       showToast("Usuário não autenticado.");
       return;
@@ -95,59 +88,50 @@ export default function NewTransactionScreen() {
     }
 
     const normalizedAmount = Number(normalizeAmount(amount));
-
-    // Valida valor
     if (isNaN(normalizedAmount) || normalizedAmount <= 0) {
       showToast("Valor da transação inválido.");
       return;
     }
-
-    // Checa valor máximo (R$1,000,000)
     if (normalizedAmount > 1000000) {
       showToast("Valor da transação muito alto.");
       return;
     }
-
-    // Checa formato do recibo
     if (receipt && !["image/jpeg", "image/png"].includes(receipt.type || "")) {
       showToast("Formato de comprovante inválido.");
       return;
     }
-
-    // Checa tamanho do recibo (5MB)
-    if (
-      receipt &&
-      receipt.base64 &&
-      receipt.base64.length * (3 / 4) > 5 * 1024 * 1024
-    ) {
+    if (receipt && receipt.base64 && receipt.base64.length * (3 / 4) > 5 * 1024 * 1024) {
       showToast("Comprovante muito grande (máx 5MB).");
       return;
     }
 
+    // validação da categoria: só aceita se estiver no enum
+    const catEnum = Object.values(TransactionCategoryEnum).includes(
+      category as TransactionCategoryEnum
+    )
+      ? (category as TransactionCategoryEnum)
+      : undefined;
+
     try {
-      const newTx: Transaction = {
+      const tx: Transaction = {
         type: transactionType,
         amount: normalizedAmount,
-        createdAt: new Date().toISOString(),
-        id: uuid.v4() as string,
+        createdAt: editingTx?.createdAt ?? new Date().toISOString(),
+        id: editingTx?.id ?? (uuid.v4() as string),
         userId: uid,
-        category: category || undefined,
+        category: catEnum,
         description: description || undefined,
       };
 
-      const saved = await addTransaction(
+      // upsert por id
+      await addTransaction(
         uid,
-        newTx,
+        tx,
         receipt ? { base64: receipt.base64! } : undefined
       );
 
-      setTransactions([saved, ...transactions]);
-      setAmount("");
-      setDescription("");
-      setCategory("");
-      setTransactionType(TransactionTypeEnum.TRANSFER);
-      setReceipt(null);
-      showToast("Transação adicionada!", "success");
+      showToast(editingTx ? "Transação atualizada!" : "Transação adicionada!", "success");
+      navigation.navigate("Home" as never);
     } catch (error: any) {
       Alert.alert("Erro", error.message);
     }
@@ -156,102 +140,114 @@ export default function NewTransactionScreen() {
   function handleDescriptionChange(text: string) {
     setDescription(text);
 
-    // Detecta categoria automaticamente
     const lowerText = text.toLowerCase();
     const matchedCategory = Object.entries(categoryKeywords).find(
-      ([category, keywords]) =>
+      ([cat, keywords]) =>
         keywords.some((kw) => lowerText.includes(kw.toLowerCase()))
     );
 
     if (matchedCategory) {
-      setCategory(matchedCategory[0] as TransactionCategoryEnum);
+      setCategory(matchedCategory[0]);
     }
   }
 
-  async function handleDelete(transactionId: string) {
-    if (!uid) return;
-
+  async function handleDeleteTx() {
+    if (!uid || !editingTx?.id) return;
     try {
-      await deleteTransaction(uid, transactionId);
-      //   Alert.alert("Success", "Transação deletada!");
+      await deleteTransaction(uid, editingTx.id);
+      showToast("Transação deletada!", "success");
+      navigation.navigate("Home" as never);
     } catch (error: any) {
-      Alert.alert("Error", error.message);
+      Alert.alert("Erro", error.message);
     }
   }
 
   return (
     <View style={styles.container}>
-      <Text style={{ color: "#8d8d8dff" }}>*Itens Obrigatórios</Text>
-      <Text style={styles.label}>Tipo de Transação*</Text>
-      <DropDownPicker
-        open={open}
-        value={transactionType}
-        items={items}
-        setOpen={setOpen}
-        setValue={setTransactionType}
-        setItems={setItems}
-        style={styles.dropdown}
-        dropDownContainerStyle={{ borderColor: "#ccc" }}
+      <CustomHeader
+        title={editingTx ? "Editar Transação" : "Nova Transação"}
+        showUserInfo={false}
+        showBackButton={true}
+        onBackPress={() => navigation.goBack()}
       />
-      <Text style={styles.label}>Valor*</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="0,0"
-        placeholderTextColor="gray"
-        keyboardType="numeric"
-        value={amount}
-        onChangeText={setAmount}
-      />
-      <Text style={styles.label}>Descrição</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Ex: Uber, Salário..."
-        placeholderTextColor="gray"
-        value={description}
-        onChangeText={handleDescriptionChange}
-      />
-      <Text style={styles.label}>Categoria</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Ex: Lazer, Transporte..."
-        placeholderTextColor="gray"
-        value={category}
-        onChangeText={(text) => {
-          setCategory(text as TransactionCategoryEnum);
-        }}
-      />
-      <Button title="Selecionar Comprovante" onPress={pickReceipt} />
-      {receipt && (
-        <View
-          style={{ flexDirection: "row", alignItems: "center", marginTop: 10 }}
-        >
-          <Image source={{ uri: receipt.uri }} style={styles.imagePicker} />
-          <TouchableOpacity
-            onPress={() => setReceipt(null)}
-            style={{ marginLeft: 10 }}
-          >
-            <Ionicons name="trash" size={28} color="red" />
+      <View style={styles.content}>
+        <Text style={{ color: "#8d8d8dff" }}>*Itens Obrigatórios</Text>
+
+        <Text style={styles.label}>Tipo de Transação*</Text>
+        <DropDownPicker
+          open={open}
+          value={transactionType}
+          items={items}
+          setOpen={setOpen}
+          setValue={setTransactionType}
+          setItems={setItems}
+          style={styles.dropdown}
+          dropDownContainerStyle={{ borderColor: "#ccc" }}
+        />
+
+        <Text style={styles.label}>Valor*</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="0,0"
+          placeholderTextColor="gray"
+          keyboardType="numeric"
+          value={amount}
+          onChangeText={setAmount}
+        />
+
+        <Text style={styles.label}>Descrição</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Ex: Uber, Salário..."
+          placeholderTextColor="gray"
+          value={description}
+          onChangeText={handleDescriptionChange}
+        />
+
+        <Text style={styles.label}>Categoria</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Ex: Lazer, Transporte..."
+          placeholderTextColor="gray"
+          value={category}
+          onChangeText={setCategory}
+        />
+
+        <Button title="Selecionar Comprovante" onPress={pickReceipt} />
+        {receipt && (
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 10 }}>
+            <Image source={{ uri: receipt.uri }} style={styles.imagePicker} />
+            <TouchableOpacity onPress={() => setReceipt(null)} style={{ marginLeft: 10 }}>
+              <Ionicons name="trash" size={28} color="red" />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <TouchableOpacity onPress={handleSave}>
+          <View style={styles.button}>
+            <Text style={{ color: "white" }}>
+              {editingTx ? "Salvar Alterações" : "Concluir Transação"}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {editingTx ? (
+          <TouchableOpacity onPress={handleDeleteTx}>
+            <View style={[styles.button, { backgroundColor: "red", marginTop: 10 }]}>
+              <Text style={{ color: "white" }}>Excluir Transação</Text>
+            </View>
           </TouchableOpacity>
-        </View>
-      )}
-      <TouchableOpacity onPress={handleSave}>
-        <View style={styles.button}>
-          <Text style={{ color: "white" }}>Concluir Transação</Text>
-        </View>
-      </TouchableOpacity>
-      <View style={{ height: 10 }} />
+        ) : null}
+
+        <View style={{ height: 10 }} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 50,
-    paddingTop: 40,
-    gap: 8,
-    backgroundColor: "#fff",
-  },
+  container: { flex: 1, backgroundColor: "#fff" },
+  content: { flex: 1, padding: 50, paddingTop: 20, gap: 8 },
   label: { fontSize: 16, marginBottom: 5 },
   input: {
     borderWidth: 1,
@@ -260,7 +256,6 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     borderRadius: 5,
   },
-  listTitle: { fontSize: 18, fontWeight: "bold", marginVertical: 15 },
   button: {
     backgroundColor: "#0F172A",
     alignItems: "center",
@@ -268,15 +263,6 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     padding: 15,
   },
-  transaction: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  txTitle: { fontSize: 16 },
-  txAmount: { fontSize: 16, fontWeight: "600" },
   dropdown: { borderColor: "#ccc", borderRadius: 6, marginBottom: 15 },
   imagePicker: {
     width: 100,
