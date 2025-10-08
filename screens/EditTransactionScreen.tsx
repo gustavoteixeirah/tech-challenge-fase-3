@@ -68,6 +68,7 @@ export default function EditTransactionScreen() {
   );
 }
 
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
