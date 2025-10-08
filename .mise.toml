@@ -1,2 +1,6 @@
 [env]
 _.file = '.env.local'
+
+[tools]
+node = "latest"
+npm = "latest"

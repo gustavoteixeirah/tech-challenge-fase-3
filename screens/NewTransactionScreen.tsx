@@ -96,7 +96,7 @@ export default function NewTransactionScreen({ route }) {
       showToast("Valor da transação muito alto.");
       return;
     }
-    if (receipt && !["image/jpeg", "image/png"].includes(receipt.type || "")) {
+    if (receipt && !["image/jpeg", "image/png", "image"].includes(receipt.type || "")) {
       showToast("Formato de comprovante inválido.");
       return;
     }
